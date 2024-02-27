@@ -1,34 +1,40 @@
 const http = require('http')
 const url = require('url')
-const data = require('./data.json');
+const jsonData = require('./data.json');
 
+const { data, currentLastEp } = jsonData;
+
+function getAvg() {
+  const epForDay = data.reduce((acc, cur, index) => {
+    const nextValue = data[index + 1]
+
+    if (nextValue) {
+      const total = nextValue.start - cur.start
+      acc.push(total)
+    }
+
+    return acc
+  }, [])
+
+  const avg = epForDay.reduce((acc, cur) => acc + cur, 0) / epForDay.length
+
+  return { avg: avg.toFixed(2) }
+}
+
+function prediction() {
+  const { avg } = getAvg()
+  const lastEpWatched = data[data.length - 1].start;
+
+  const restDays = (currentLastEp - lastEpWatched) / Number(avg)
+
+  return {
+    restDays: restDays.toFixed(2)
+  }
+}
 
 const routes = new Map([
-  [
-    'media',
-    () => {
-      const epForDay = data.reduce((acc, cur, index) => {
-        const nextValue = data[index + 1]
-
-        if (nextValue) {
-          const total = nextValue.start - cur.start
-          acc.push(total)
-        }
-
-        return acc
-      }, [])
-
-      const avg = epForDay.reduce((acc, cur) => acc + cur, 0) / epForDay.length
-
-      return { 'media': avg.toFixed(2) }
-    }
-  ],
-  [
-    'previsao',
-    () => {
-      console.log('aqui')
-    }
-  ]
+  ['media', getAvg],
+  ['previsao', prediction]
 ])
 
 
