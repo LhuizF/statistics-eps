@@ -27,8 +27,12 @@ function prediction() {
 
   const restDays = (currentLastEp - lastEpWatched) / Number(avg)
 
+  const date = new Date()
+  date.setDate(date.getDate() + restDays)
+
   return {
-    restDays: restDays.toFixed(2)
+    restDays: restDays.toFixed(2),
+    date: date.toISOString().split('T')[0].split('-').reverse().join('-')
   }
 }
 
