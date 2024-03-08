@@ -108,12 +108,35 @@ function page() {
   return html
 }
 
+const getAvgByDay = () => {
+
+  const avgForDay = data.reduce((acc, cur, index) => {
+    const nextValue = data[index + 1]
+
+    if (!nextValue) {
+      return acc
+    }
+
+    const epsWatched = nextValue.start - cur.start
+
+    const totalEps = acc.reduce((accInt, curInt) => curInt.epsWatched + accInt, 0) + epsWatched
+
+    const avg = totalEps / (acc.length + 1)
+
+    acc.push({ day: cur.date, epsWatched, avg: avg.toFixed(2) })
+
+    return acc
+  }, [])
+
+  return { avgForDay }
+}
+
 const routes = new Map([
   ['media', getAvg],
   ['previsao', prediction],
-  ['', page]
+  ['', page],
+  ['media-por-dia', getAvgByDay]
 ])
-
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
