@@ -109,7 +109,6 @@ function page() {
 }
 
 const getAvgByDay = () => {
-
   const avgForDay = data.reduce((acc, cur, index) => {
     const nextValue = data[index + 1]
 
