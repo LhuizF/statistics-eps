@@ -1,6 +1,10 @@
 const http = require('http')
 const url = require('url')
 const jsonData = require('./data.json');
+const path = require('path');
+const fs = require('fs');
+
+const gPath = path.join(__dirname, 'g.js');
 
 const { data, currentLastEp } = jsonData;
 
@@ -62,6 +66,14 @@ function prediction() {
 function page() {
   const randomColor = colors[Math.floor(Math.random() * colors.length)]
 
+  const avgForDay = getAvgByDay()
+  const header = [['Dia', 'Episódios assistidos', 'Média por dia']]
+
+  const dataFormatted = avgForDay.reduce((arr, { day, avg, epsWatched }) => {
+    arr.push([day, epsWatched, Number(avg)])
+    return arr
+  }, header)
+
   const html = `
   <!DOCTYPE html>
   <html lang="en">
@@ -71,6 +83,28 @@ function page() {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawVisualization);
+
+      function drawVisualization() {
+        var data = google.visualization.arrayToDataTable(${JSON.stringify(dataFormatted)});
+
+        var options = {
+          title : 'Contagem de episódios',
+          vAxis: {title: 'Número de episódios'},
+          hAxis: {title: 'Dia'},
+          seriesType: 'bars',
+          series: {1: {type: 'line'}}
+        };
+
+        var chart = new google.visualization.ComboChart(document.getElementById('chart_div'));
+        chart.draw(data, options)
+      }
+    </script>
+
     <title>Contagem de episódios</title>
     <style>
       body {
@@ -83,7 +117,10 @@ function page() {
         font-weight: 400;
         font-style: normal;
       }
-      div {
+      .container {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
         text-align: center;
         background-color: ${randomColor.secondary};
         padding: 20px;
@@ -92,14 +129,22 @@ function page() {
         color: ${randomColor.main};
         border: 2px solid ${randomColor.main};
         box-shadow: ${randomColor.main} 0px 4px 12px;
+        width: 80%;
+        max-width: 800px;
+      }
+      #chart_div {
+        width: 100%;
+        height: 40vw;
+        max-height: 400px;
       }
     </style>
   </head>
   <body>
-    <div>
+    <div class='container'>
       <h1>Contagem de episódios</h1>
       <p>Média de episódios por dia: ${getAvg().avg}</p>
       <p>Previsão para acabar: ${prediction().date}</p>
+      <div id="chart_div"></div>
     </div>
   </body>
   </html>
@@ -127,7 +172,7 @@ const getAvgByDay = () => {
     return acc
   }, [])
 
-  return { avgForDay }
+  return avgForDay;
 }
 
 const routes = new Map([
