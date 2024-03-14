@@ -2,9 +2,6 @@ const http = require('http')
 const url = require('url')
 const jsonData = require('./data.json');
 const path = require('path');
-const fs = require('fs');
-
-const gPath = path.join(__dirname, 'g.js');
 
 const { data, currentLastEp } = jsonData;
 
