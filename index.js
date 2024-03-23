@@ -28,9 +28,16 @@ const colors = [
   }
 ]
 
-function getAvg() {
+function getAvg(query = {}) {
+  const endDate = query.date ? getTimeDate(query.date) : null;
   const epForDay = data.reduce((acc, cur, index) => {
     const nextValue = data[index + 1]
+
+    const dateTime = getTimeDate(cur.date)
+
+    if (endDate && dateTime > endDate) {
+      return acc
+    }
 
     if (nextValue) {
       const total = nextValue.start - cur.start
@@ -45,8 +52,8 @@ function getAvg() {
   return { avg: avg.toFixed(2) }
 }
 
-function prediction() {
-  const { avg } = getAvg()
+function prediction(query = {}) {
+  const { avg } = getAvg(query)
   const lastEpWatched = data[data.length - 1].start;
 
   const restDays = (currentLastEp - lastEpWatched) / Number(avg)
@@ -60,10 +67,12 @@ function prediction() {
   }
 }
 
-function page() {
+function page(query = {}) {
   const randomColor = colors[Math.floor(Math.random() * colors.length)]
 
-  const avgForDay = getAvgByDay()
+  const dates = data.map(({ date }) => date)
+
+  const avgForDay = getAvgByDay(query)
   const header = [['Dia', 'Episódios assistidos', 'Média por dia']]
 
   const dataFormatted = avgForDay.reduce((arr, { day, avg, epsWatched }) => {
@@ -102,6 +111,29 @@ function page() {
       }
     </script>
 
+    <script type="text/javascript">
+      function filterData() {
+        const selectedDate = document.getElementById("date_select").value;
+        const url = new URL(window.location.href);
+
+        if (selectedDate) {
+          url.searchParams.set('date', selectedDate);
+        } else {
+          url.searchParams.delete('date');
+        }
+
+        window.location.href = url.href;
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const selectedDate = urlParams.get('date');
+        if (selectedDate) {
+          document.getElementById('date_select').value = selectedDate;
+        }
+      });
+    </script>
+
     <title>Contagem de episódios</title>
     <style>
       body {
@@ -134,25 +166,59 @@ function page() {
         height: 40vw;
         max-height: 400px;
       }
+      option {
+        background-color: ${randomColor.secondary};
+        color: ${randomColor.main};
+        font-weight: 500;
+        padding: 0px;
+        text-align: center;
+      }
+      select {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 2px solid ${randomColor.main};
+        background-color: ${randomColor.secondary};
+        color: ${randomColor.main};
+        font-weight: 500;
+      }
     </style>
   </head>
   <body>
     <div class='container'>
       <h1>Contagem de episódios</h1>
-      <p>Média de episódios por dia: ${getAvg().avg}</p>
-      <p>Previsão para acabar: ${prediction().date}</p>
+      <p>Média de episódios por dia: ${getAvg(query).avg}</p>
+      <select id="date_select" name="date_select" onchange="filterData()">
+        <option value="">Selecione uma data</option>
+        ${dates.map((date) => `<option value="${date}">${date}</option>`).join('')}
+      </select>
+      <p>Previsão para acabar: ${prediction(query).date}</p>
       <div id="chart_div"></div>
     </div>
   </body>
   </html>
   `
-
   return html
 }
 
-const getAvgByDay = () => {
+const getTimeDate = (date) => {
+  const dateSplit = date.split('-').reverse().join('-')
+  return new Date(dateSplit).getTime()
+
+}
+
+const getAvgByDay = (query) => {
+  const endDate = query.date ? getTimeDate(query.date) : null;
+
   const avgForDay = data.reduce((acc, cur, index) => {
     const nextValue = data[index + 1]
+
+    const dateTime = getTimeDate(cur.date)
+
+    if (endDate && dateTime > endDate) {
+      return acc
+    }
 
     if (!nextValue) {
       return acc
@@ -191,7 +257,7 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  const response = routes.get(pathname)()
+  const response = routes.get(pathname)(parsedUrl.query)
 
   res.end(typeof response === 'object' ? JSON.stringify(response) : response)
 
